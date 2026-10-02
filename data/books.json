@@ -17,6 +17,7 @@
         "status": "완독",
         "startedDate": null,
         "completedDate": null,
+        "completionBasisDate": "2026-10-02T07:48:00.000Z",
         "rating": "",
         "url": "https://app.notion.com/p/3ed551f3818b81b19830fd458d32ae01",
         "createdTime": "2026-10-02T03:30:00.000Z"
@@ -26,6 +27,7 @@
         "status": "읽기 전",
         "startedDate": null,
         "completedDate": null,
+        "completionBasisDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/3ed551f3818b81b3af4ad275bc1d0707",
         "createdTime": "2026-10-02T07:48:00.000Z"
@@ -50,6 +52,7 @@
         "status": "읽기 전",
         "startedDate": null,
         "completedDate": null,
+        "completionBasisDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/3e4551f3818b8108961bf17863f907f0",
         "createdTime": "2026-09-23T03:01:00.000Z"
@@ -74,6 +77,7 @@
         "status": "읽기 전",
         "startedDate": null,
         "completedDate": null,
+        "completionBasisDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/3e4551f3818b812c85f8e6619f8de310",
         "createdTime": "2026-09-23T02:42:00.000Z"
@@ -98,6 +102,7 @@
         "status": "읽기 전",
         "startedDate": null,
         "completedDate": null,
+        "completionBasisDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/3e4551f3818b81a9bf3addf0c8fb8630",
         "createdTime": "2026-09-23T02:36:00.000Z"
@@ -122,6 +127,7 @@
         "status": "읽기 전",
         "startedDate": null,
         "completedDate": null,
+        "completionBasisDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/10-3e4551f3818b813cb3e7fa990055a466",
         "createdTime": "2026-09-23T02:29:00.000Z"
@@ -146,6 +152,7 @@
         "status": "읽기 전",
         "startedDate": null,
         "completedDate": null,
+        "completionBasisDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/The-One-Thing-60-3e4551f3818b810abb5ef0ce2ffa6d92",
         "createdTime": "2026-09-23T02:22:00.000Z"
@@ -170,6 +177,7 @@
         "status": "읽기 전",
         "startedDate": null,
         "completedDate": null,
+        "completionBasisDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/3e4551f3818b818b9fd4d10e66b4147a",
         "createdTime": "2026-09-23T02:14:00.000Z"
@@ -194,6 +202,7 @@
         "status": "읽기 전",
         "startedDate": null,
         "completedDate": null,
+        "completionBasisDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/168-3e4551f3818b81f48d28c99ef403ace0",
         "createdTime": "2026-09-23T01:43:00.000Z"
@@ -218,6 +227,7 @@
         "status": "읽기 전",
         "startedDate": null,
         "completedDate": null,
+        "completionBasisDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/31e551f3818b8358b94c81efdd07f205",
         "createdTime": "2026-09-22T01:08:00.000Z"
