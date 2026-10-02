@@ -3,23 +3,32 @@
     "title": "인비인",
     "author": "성해나",
     "status": "읽기 전",
-    "round": 1,
+    "round": 2,
     "rating": "",
     "currentPage": null,
     "totalPage": null,
-    "url": "https://app.notion.com/p/3ed551f3818b81b19830fd458d32ae01",
-    "cover": "./assets/covers/3ed551f3818b81b19830fd458d32ae01.jpg",
+    "url": "https://app.notion.com/p/3ed551f3818b81b3af4ad275bc1d0707",
+    "cover": "./assets/covers/3ed551f3818b81b3af4ad275bc1d0707.jpg",
     "tone": "violet",
-    "createdTime": "2026-10-02T03:30:00.000Z",
+    "createdTime": "2026-10-02T07:48:00.000Z",
     "rounds": [
       {
         "round": 1,
-        "status": "읽기 전",
+        "status": "완독",
         "startedDate": null,
-        "completedDate": "2026-10-02",
+        "completedDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/3ed551f3818b81b19830fd458d32ae01",
         "createdTime": "2026-10-02T03:30:00.000Z"
+      },
+      {
+        "round": 2,
+        "status": "읽기 전",
+        "startedDate": null,
+        "completedDate": null,
+        "rating": "",
+        "url": "https://app.notion.com/p/3ed551f3818b81b3af4ad275bc1d0707",
+        "createdTime": "2026-10-02T07:48:00.000Z"
       }
     ]
   },
@@ -88,7 +97,7 @@
         "round": 1,
         "status": "읽기 전",
         "startedDate": null,
-        "completedDate": "2026-09-23",
+        "completedDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/3e4551f3818b81a9bf3addf0c8fb8630",
         "createdTime": "2026-09-23T02:36:00.000Z"
@@ -136,7 +145,7 @@
         "round": 1,
         "status": "읽기 전",
         "startedDate": null,
-        "completedDate": "2026-09-23",
+        "completedDate": null,
         "rating": "",
         "url": "https://app.notion.com/p/The-One-Thing-60-3e4551f3818b810abb5ef0ce2ffa6d92",
         "createdTime": "2026-09-23T02:22:00.000Z"
