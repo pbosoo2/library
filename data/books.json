@@ -16,8 +16,8 @@
         "round": 1,
         "status": "완독",
         "startedDate": null,
-        "completedDate": null,
-        "completionBasisDate": "2026-10-02T07:48:00.000Z",
+        "completedDate": "2026-10-02",
+        "completionBasisDate": "2026-10-02",
         "rating": "",
         "url": "https://app.notion.com/p/3ed551f3818b81b19830fd458d32ae01",
         "createdTime": "2026-10-02T03:30:00.000Z"
