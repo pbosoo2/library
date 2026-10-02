@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - ".github/workflows/sync-notion.yml"
+      - "scripts/sync-notion.mjs"
   schedule:
     - cron: "17 * * * *"
 
