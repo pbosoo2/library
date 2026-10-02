@@ -24,6 +24,7 @@ const prop = (page,name) => page.properties?.[name];
 const title = p => plain(p?.title);
 const authors = p => (p?.multi_select||[]).map(x=>x.name).join(" · ");
 const status = p => p?.status?.name || p?.select?.name || "상태 없음";
+const date = p => p?.date?.start || null;
 const tones=["violet","mint","blue","gold","rose","amber","cyan","indigo"];
 function imageUrl(page){
   const f=prop(page,"책 표지")?.files?.[0];
@@ -47,20 +48,57 @@ await fs.mkdir("data",{recursive:true});
 await fs.rm("assets/covers",{recursive:true,force:true});
 await fs.mkdir("assets/covers",{recursive:true});
 const pages=await queryAll(BOOKS_SOURCE);
-const books=[];
-for(const [i,page] of pages.entries()){
+const records=[];
+for(const page of pages){
   const name=title(prop(page,"도서명")); if(!name) continue;
-  books.push({
+  records.push({
+    id:page.id,
     title:name,
     author:authors(prop(page,"저자")) || "저자 미상",
     status:status(prop(page,"상태")),
+    round:Math.max(1,prop(page,"회차")?.number || 1),
+    startedDate:date(prop(page,"시작일")),
+    completedDate:date(prop(page,"완독일")),
     rating:prop(page,"평점")?.select?.name || "",
     currentPage:prop(page,"현재 페이지")?.number ?? null,
     totalPage:prop(page,"전체 페이지")?.number ?? null,
     url:page.url,
-    cover:await saveCover(imageUrl(page),page.id),
-    tone:tones[i%tones.length],
+    coverSource:imageUrl(page),
     createdTime:page.created_time
+  });
+}
+const groups=new Map();
+for(const record of records){
+  const key=record.title.trim().toLocaleLowerCase("ko-KR");
+  if(!groups.has(key)) groups.set(key,[]);
+  groups.get(key).push(record);
+}
+const books=[];
+for(const [i,rounds] of [...groups.values()].entries()){
+  rounds.sort((a,b)=>a.round-b.round || new Date(a.createdTime)-new Date(b.createdTime));
+  const latest=rounds.at(-1);
+  const coverRecord=[...rounds].reverse().find(item=>item.coverSource) || latest;
+  books.push({
+    title:latest.title,
+    author:latest.author,
+    status:latest.status,
+    round:latest.round,
+    rating:latest.rating,
+    currentPage:latest.currentPage,
+    totalPage:latest.totalPage,
+    url:latest.url,
+    cover:await saveCover(coverRecord.coverSource,coverRecord.id),
+    tone:tones[i%tones.length],
+    createdTime:latest.createdTime,
+    rounds:rounds.map(item=>({
+      round:item.round,
+      status:item.status,
+      startedDate:item.startedDate,
+      completedDate:item.completedDate,
+      rating:item.rating,
+      url:item.url,
+      createdTime:item.createdTime
+    }))
   });
 }
 books.sort((a,b)=>new Date(b.createdTime)-new Date(a.createdTime));
@@ -68,4 +106,4 @@ const report=await queryAll(REPORT_SOURCE);
 const goal=report[0] ? (prop(report[0],"올해 목표 권수")?.number || 0) : 0;
 await fs.writeFile("data/books.json",JSON.stringify(books,null,2)+"\n");
 await fs.writeFile("data/config.json",JSON.stringify({goal,updatedAt:new Date().toISOString()},null,2)+"\n");
-console.log(`동기화 완료: ${books.length}권, 완독 목표 ${goal}권`);
+console.log(`동기화 완료: ${books.length}종 / ${records.length}회차, 완독 목표 ${goal}권`);
