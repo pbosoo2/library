@@ -3,7 +3,7 @@
     "title": "인비인",
     "author": "성해나",
     "status": "읽기 전",
-    "round": 2,
+    "round": 1,
     "rating": "",
     "currentPage": null,
     "totalPage": null,
@@ -14,16 +14,6 @@
     "rounds": [
       {
         "round": 1,
-        "status": "완독",
-        "startedDate": null,
-        "completedDate": "2026-10-02",
-        "completionBasisDate": "2026-10-02",
-        "rating": "",
-        "url": "https://app.notion.com/p/3ed551f3818b81b19830fd458d32ae01",
-        "createdTime": "2026-10-02T03:30:00.000Z"
-      },
-      {
-        "round": 2,
         "status": "읽기 전",
         "startedDate": null,
         "completedDate": null,
