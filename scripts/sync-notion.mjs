@@ -64,7 +64,8 @@ for(const page of pages){
     totalPage:prop(page,"전체 페이지")?.number ?? null,
     url:page.url,
     coverSource:imageUrl(page),
-    createdTime:page.created_time
+    createdTime:page.created_time,
+    lastEditedTime:page.last_edited_time
   });
 }
 const groups=new Map();
@@ -90,11 +91,14 @@ for(const [i,rounds] of [...groups.values()].entries()){
     cover:await saveCover(coverRecord.coverSource,coverRecord.id),
     tone:tones[i%tones.length],
     createdTime:latest.createdTime,
-    rounds:rounds.map(item=>({
+    rounds:rounds.map((item,index)=>({
       round:item.round,
       status:item.status,
       startedDate:item.startedDate,
       completedDate:item.completedDate,
+      completionBasisDate:item.status==="완독"
+        ? (item.completedDate || rounds[index+1]?.createdTime || item.lastEditedTime || item.createdTime)
+        : null,
       rating:item.rating,
       url:item.url,
       createdTime:item.createdTime
