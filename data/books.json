@@ -1,14 +1,26 @@
 [
   {
+    "title": "인비인",
+    "author": "성해나",
+    "status": "읽기 전",
+    "rating": "",
+    "currentPage": null,
+    "totalPage": null,
+    "url": "https://app.notion.com/p/3ed551f3818b81b19830fd458d32ae01",
+    "cover": "./assets/covers/3ed551f3818b81b19830fd458d32ae01.jpg",
+    "tone": "violet",
+    "createdTime": "2026-10-02T03:30:00.000Z"
+  },
+  {
     "title": "달러구트 꿈 백화점",
     "author": "이미예",
-    "status": "완독",
+    "status": "읽기 전",
     "rating": "",
     "currentPage": null,
     "totalPage": null,
     "url": "https://app.notion.com/p/3e4551f3818b8108961bf17863f907f0",
     "cover": "./assets/covers/3e4551f3818b8108961bf17863f907f0.jpg",
-    "tone": "violet",
+    "tone": "mint",
     "createdTime": "2026-09-23T03:01:00.000Z"
   },
   {
@@ -20,7 +32,7 @@
     "totalPage": null,
     "url": "https://app.notion.com/p/3e4551f3818b812c85f8e6619f8de310",
     "cover": "./assets/covers/3e4551f3818b812c85f8e6619f8de310.jpg",
-    "tone": "mint",
+    "tone": "blue",
     "createdTime": "2026-09-23T02:42:00.000Z"
   },
   {
@@ -32,7 +44,7 @@
     "totalPage": null,
     "url": "https://app.notion.com/p/3e4551f3818b81a9bf3addf0c8fb8630",
     "cover": "./assets/covers/3e4551f3818b81a9bf3addf0c8fb8630.webp",
-    "tone": "blue",
+    "tone": "gold",
     "createdTime": "2026-09-23T02:36:00.000Z"
   },
   {
@@ -44,7 +56,7 @@
     "totalPage": null,
     "url": "https://app.notion.com/p/10-3e4551f3818b813cb3e7fa990055a466",
     "cover": "./assets/covers/3e4551f3818b813cb3e7fa990055a466.jpg",
-    "tone": "gold",
+    "tone": "rose",
     "createdTime": "2026-09-23T02:29:00.000Z"
   },
   {
@@ -56,7 +68,7 @@
     "totalPage": null,
     "url": "https://app.notion.com/p/The-One-Thing-60-3e4551f3818b810abb5ef0ce2ffa6d92",
     "cover": "./assets/covers/3e4551f3818b810abb5ef0ce2ffa6d92.jpg",
-    "tone": "rose",
+    "tone": "amber",
     "createdTime": "2026-09-23T02:22:00.000Z"
   },
   {
@@ -68,7 +80,7 @@
     "totalPage": null,
     "url": "https://app.notion.com/p/3e4551f3818b818b9fd4d10e66b4147a",
     "cover": "./assets/covers/3e4551f3818b818b9fd4d10e66b4147a.jpg",
-    "tone": "amber",
+    "tone": "cyan",
     "createdTime": "2026-09-23T02:14:00.000Z"
   },
   {
@@ -80,7 +92,7 @@
     "totalPage": null,
     "url": "https://app.notion.com/p/168-3e4551f3818b81f48d28c99ef403ace0",
     "cover": "./assets/covers/3e4551f3818b81f48d28c99ef403ace0.jpg",
-    "tone": "cyan",
+    "tone": "indigo",
     "createdTime": "2026-09-23T01:43:00.000Z"
   },
   {
@@ -92,7 +104,7 @@
     "totalPage": null,
     "url": "https://app.notion.com/p/31e551f3818b8358b94c81efdd07f205",
     "cover": "./assets/covers/31e551f3818b8358b94c81efdd07f205.jpg",
-    "tone": "indigo",
+    "tone": "violet",
     "createdTime": "2026-09-22T01:08:00.000Z"
   }
 ]
