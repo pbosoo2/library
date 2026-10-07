@@ -1,0 +1,11 @@
+{
+  "name": "magic-notion-library",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "test": "node --test tests/*.mjs"
+  }
+}

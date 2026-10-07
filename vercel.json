@@ -1,0 +1,10 @@
+{
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "functions": {
+    "api/library.js": {
+      "maxDuration": 30
+    }
+  }
+}

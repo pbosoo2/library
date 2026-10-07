@@ -6,17 +6,65 @@
 @media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:680px){.shell{padding:20px 16px 38px}.source{display:none}.hero{padding:30px 24px}.grid{grid-template-columns:repeat(2,1fr);gap:12px}.toolbar{align-items:flex-start;flex-direction:column}.search{width:100%;flex-basis:auto}.footer{flex-direction:column}.hero:after{right:20px}}@media(max-width:390px){.grid{grid-template-columns:1fr}.cover-wrap{aspect-ratio:4/4.4}.topbar{margin-bottom:16px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style></head><body><div class="stars"></div><main class="shell"><section class="hero"><h1>별빛 수집가의<br>마법 도서관</h1><p>아직 펼치지 않은 책은 잠든 주문서와 같습니다. 한 권씩 깨워 지혜의 별자리를 완성해 보세요.</p><div class="hero-stats"><div class="stat"><b id="totalCount">0</b><span>수집한 마도서</span></div><div class="stat"><b id="completeCount">0</b><span>완독한 마도서</span></div><div class="stat"><b id="goalPercent">0%</b><span id="goalLabel">연간 완독 목표 · 0/10</span><div class="progress"><i id="goalBar" style="width:0%"></i></div></div></div></section>
 <div class="toolbar"><h2>마도서 진열장</h2><div class="controls"><div class="tabs" role="tablist" aria-label="독서 상태 필터"><button class="tab" type="button" role="tab" aria-selected="true" data-status="">전체</button><button class="tab" type="button" role="tab" aria-selected="false" data-status="읽는 중">읽는 중</button><button class="tab" type="button" role="tab" aria-selected="false" data-status="읽기 전">읽기 전</button><button class="tab" type="button" role="tab" aria-selected="false" data-status="중단">중단</button><button class="tab" type="button" role="tab" aria-selected="false" data-status="완독">완독</button></div><label class="search"><input id="q" type="search" aria-label="책 검색" placeholder="책 또는 저자 검색"></label></div></div><section id="grid" class="grid" aria-live="polite"></section><div id="empty" class="empty">찾는 마도서가 아직 이 서가에 없어요.</div><dialog id="roundDialog" class="round-dialog"><div class="dialog-head"><h2 id="dialogTitle">회차 선택</h2><button id="dialogClose" class="dialog-close" type="button" aria-label="닫기">×</button></div><div id="roundList" class="round-list"></div></dialog>
-<div class="note"><b>보호 주문 활성화:</b> 이 HTML은 데이터베이스를 읽어 만든 정적 전시관입니다. 검색과 책 열람만 가능하며 Notion 데이터베이스를 수정하지 않습니다.</div><footer class="footer"><span>기록 시작일 2026.01.01</span><span>Notion 데이터 자동 동기화</span></footer></main>
+<div class="note"><b>보호 주문 활성화:</b> 이 도서관은 노션 기록을 읽기 전용으로 보여줍니다. 검색과 책 열람만 가능하며 Notion 데이터베이스를 수정하지 않습니다.</div><footer class="footer"><span>기록 시작일 2026.01.01</span><span id="syncStatus" role="status">데이터를 불러오는 중…</span></footer></main>
 <script>
-let books=[],activeStatus='';
+let books=[],activeStatus='',openBookUrl=null;
 const grid=document.getElementById('grid'),empty=document.getElementById('empty'),q=document.getElementById('q');
 const roundDialog=document.getElementById('roundDialog'),dialogTitle=document.getElementById('dialogTitle'),roundList=document.getElementById('roundList');
 const statusOrder={'읽는 중':0,'읽기 전':1,'중단':2,'완독':3};
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function openRounds(index){const book=books[index];if(!book)return;dialogTitle.textContent=book.title;const rounds=[...(book.rounds||[])].sort((a,b)=>b.round-a.round);roundList.innerHTML=rounds.map(item=>`<a class="round-link" href="${esc(item.url)}" target="_blank" rel="noopener"><span class="round-meta"><b>${item.round}회차</b><span>${esc(item.status||'상태 없음')}${item.status==='완독'&&item.completedDate?' · 완독 '+esc(item.completedDate):''}</span></span><span>↗</span></a>`).join('');roundDialog.showModal()}
+function openRounds(index){const book=books[index];if(!book)return;openBookUrl=book.url;dialogTitle.textContent=book.title;const rounds=[...(book.rounds||[])].sort((a,b)=>b.round-a.round);roundList.innerHTML=rounds.map(item=>`<a class="round-link" href="${esc(item.url)}" target="_blank" rel="noopener"><span class="round-meta"><b>${item.round}회차</b><span>${esc(item.status||'상태 없음')}${item.status==='완독'&&item.completedDate?' · 완독 '+esc(item.completedDate):''}</span></span><span>↗</span></a>`).join('');roundDialog.showModal()}
 function draw(list){grid.innerHTML=list.map(b=>{const index=books.indexOf(b),round=Number(b.round)||1;return `<article class="book tone-${b.tone||'indigo'}" data-index="${index}" tabindex="0" role="button" aria-label="${esc(b.title)} 회차 선택"><div class="cover-wrap"><img src="${esc(b.cover||'')}" alt="${esc(b.title)} 표지" loading="lazy"></div><div class="book-body"><div class="status-line"><div class="status">${esc(b.status||'상태 없음')}</div>${round>=2?`<span class="round-badge">${round}회차</span>`:''}</div><h3 class="title">${esc(b.title)}</h3><div class="author">${esc(b.author||'저자 미상')}</div><div class="open"><span>${round>=2?'회차 선택':'마도서 펼치기'}</span><span>↗</span></div></div></article>`}).join('');empty.style.display=list.length?'none':'block';grid.querySelectorAll('.book').forEach(card=>{card.addEventListener('click',()=>openRounds(Number(card.dataset.index)));card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openRounds(Number(card.dataset.index))}})})}
 function refresh(){const v=q.value.trim().toLowerCase();draw(books.filter(b=>(!activeStatus||b.status===activeStatus)&&(b.title+' '+b.author).toLowerCase().includes(v)))}
 function updateStats(goal){const allRounds=books.flatMap(b=>b.rounds||[]),completed=allRounds.filter(item=>item.status==='완독').length,currentYear=new Date().getFullYear(),annualCompleted=allRounds.filter(item=>{const completionDate=item.completedDate||item.completionBasisDate||item.lastEditedTime||item.createdTime;return item.status==='완독'&&completionDate&&new Date(completionDate).getFullYear()===currentYear}).length,rate=goal>0?Math.min(100,Math.round(annualCompleted/goal*100)):0;document.getElementById('totalCount').textContent=books.length;document.getElementById('completeCount').textContent=completed;document.getElementById('goalPercent').textContent=rate+'%';document.getElementById('goalLabel').textContent=currentYear+'년 완독 목표 · '+annualCompleted+'/'+goal;document.getElementById('goalBar').style.width=rate+'%'}
-async function init(){try{const [br,cr]=await Promise.all([fetch('./data/books.json?ts='+Date.now()),fetch('./data/config.json?ts='+Date.now())]);if(!br.ok||!cr.ok)throw new Error('데이터 파일을 불러오지 못했습니다.');const raw=await br.json();books=raw.map(b=>({...b,round:Number(b.round)||1,rounds:Array.isArray(b.rounds)&&b.rounds.length?b.rounds:[{round:Number(b.round)||1,status:b.status,completedDate:b.completedDate||null,url:b.url,createdTime:b.createdTime}]})).sort((a,b)=>(statusOrder[a.status]??99)-(statusOrder[b.status]??99)||new Date(b.createdTime||0)-new Date(a.createdTime||0));const config=await cr.json();updateStats(Number(config.goal)||0);refresh()}catch(err){grid.innerHTML='';empty.style.display='block';empty.textContent='도서 정보를 불러오지 못했어요. GitHub Actions 실행 상태를 확인해 주세요.';console.error(err)}}
+const syncStatus=document.getElementById('syncStatus');
+let apiUrl='',pollIntervalMs=30000,busy=false,loaded=false,lastSignature='',timer;
+function applyData(raw,config){
+  if(!Array.isArray(raw)||!config||!raw.every(b=>b&&typeof b.title==='string'))throw new Error('잘못된 도서 데이터');
+  const next=raw.map(b=>({...b,round:Number(b.round)||1,rounds:Array.isArray(b.rounds)&&b.rounds.length?b.rounds:[{round:Number(b.round)||1,status:b.status,completedDate:b.completedDate||null,url:b.url,createdTime:b.createdTime}]})).sort((a,b)=>(statusOrder[a.status]??99)-(statusOrder[b.status]??99)||new Date(b.createdTime||0)-new Date(a.createdTime||0));
+  const signature=JSON.stringify([next,config.goal]);
+  if(signature!==lastSignature){
+    const x=window.scrollX,y=window.scrollY,focused=document.activeElement;
+    const focusedBookUrl=focused?.matches('.book')?books[Number(focused.dataset.index)]?.url:null;
+    books=next;lastSignature=signature;empty.textContent='찾는 마도서가 아직 이 서가에 없어요.';
+    updateStats(Number(config.goal)||0);refresh();
+    if(roundDialog.open){const index=books.findIndex(b=>b.url===openBookUrl);if(index>=0)openRounds(index);else roundDialog.close()}
+    if(focusedBookUrl){const index=books.findIndex(b=>b.url===focusedBookUrl);grid.querySelector(`[data-index="${index}"]`)?.focus({preventScroll:true})}
+    window.scrollTo(x,y);
+  }
+  loaded=true;
+}
+async function readSnapshot(){
+  const [br,cr]=await Promise.all([fetch('./data/books.json',{cache:'no-store'}),fetch('./data/config.json',{cache:'no-store'})]);
+  if(!br.ok||!cr.ok)throw new Error('저장된 데이터 조회 실패');
+  applyData(await br.json(),await cr.json());
+}
+async function sync(){
+  if(busy||document.hidden)return;
+  busy=true;
+  try{
+    if(apiUrl){
+      const response=await fetch(apiUrl,{cache:'no-store',signal:AbortSignal.timeout(25000)});
+      if(!response.ok)throw new Error('최신 데이터 조회 실패');
+      const data=await response.json();applyData(data.books,data.config);
+      const timestamp=data.config.updatedAt?new Date(data.config.updatedAt).toLocaleTimeString('ko-KR'):'';
+      syncStatus.textContent=`노션 자동 갱신 · ${pollIntervalMs/1000}초 간격${timestamp?' · 조회 '+timestamp:''}`;
+    }else{await readSnapshot();syncStatus.textContent='저장된 데이터 · 실시간 서버 연결 전'}
+  }catch(error){
+    if(!loaded){try{await readSnapshot()}catch{empty.style.display='block';empty.textContent='도서 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.'}}
+    syncStatus.textContent=loaded?'최신 조회 실패 · 기존 데이터 유지, 다음 갱신 때 재시도':'데이터 조회 실패 · 다음 갱신 때 재시도';
+    console.warn(error.message);
+  }finally{busy=false}
+}
+async function init(){
+  try{
+    const response=await fetch('./data/live.json',{cache:'no-store'});
+    if(response.ok){const config=await response.json();if(config.apiUrl){const url=new URL(config.apiUrl);if(url.protocol==='https:')apiUrl=url.href}}
+  }catch{ /* GitHub Pages remains usable before live setup. */ }
+  if(!apiUrl&&location.hostname.endsWith('.vercel.app'))apiUrl='/api/library';
+  await sync();
+  timer=setInterval(sync,pollIntervalMs);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+}
 q.addEventListener('input',refresh);document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>{activeStatus=tab.dataset.status;document.querySelectorAll('.tab').forEach(item=>item.setAttribute('aria-selected',String(item===tab)));refresh()}));document.getElementById('dialogClose').addEventListener('click',()=>roundDialog.close());roundDialog.addEventListener('click',event=>{if(event.target===roundDialog)roundDialog.close()});init();
 </script></body></html>
