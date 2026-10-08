@@ -8,19 +8,23 @@
 /* The hidden clock and toggle are local UI only; neither makes API requests. */
 body{height:100dvh;overflow:hidden}
 .shell{height:100dvh;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;padding-bottom:80px}
-body.countdown-open .shell{height:calc(100dvh - 128px - env(safe-area-inset-bottom))}
-.sync-countdown{position:fixed;inset:auto 0 0;z-index:20;height:calc(128px + env(safe-area-inset-bottom));display:grid;place-items:center;padding:16px 80px calc(16px + env(safe-area-inset-bottom));border-top:1px solid #d9d0eb;background:var(--paper);color:var(--ink);text-align:center}
+body.countdown-open .shell{height:calc(100dvh - 184px - env(safe-area-inset-bottom))}
+.sync-countdown{position:fixed;inset:auto 0 0;z-index:20;height:calc(184px + env(safe-area-inset-bottom));display:grid;place-items:center;padding:16px 80px calc(16px + env(safe-area-inset-bottom));border-top:1px solid #d9d0eb;background:var(--paper);color:var(--ink);text-align:center}
 .sync-countdown[hidden]{display:none}
 .countdown-content{min-width:0}
 .sync-countdown-label{display:block;font-size:14px;line-height:1.5;color:#655a7c}
 .sync-countdown-time{display:block;margin:4px 0;font-family:Arial,"Noto Sans KR",sans-serif;font-size:30px;font-weight:700;line-height:1.2;letter-spacing:.04em;font-variant-numeric:tabular-nums;color:#554595}
 .sync-countdown-note{display:block;font-size:14px;line-height:1.5;color:#70647b}
+.sync-now{display:block;min-height:44px;min-width:160px;margin:8px auto;padding:10px 24px;border:1px solid #554595;border-radius:8px;background:#554595;color:#fff;font:700 14px/1.5 Arial,"Noto Sans KR",sans-serif;cursor:pointer}
+.sync-now:hover:not(:disabled){background:#44367a;border-color:#44367a}
+.sync-now:focus-visible{outline:3px solid rgba(120,103,200,.4);outline-offset:3px}
+.sync-now:disabled{background:#817598;border-color:#817598;cursor:wait}
 .sync-toggle{position:fixed;right:max(24px,env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));z-index:21;display:grid;place-items:center;width:48px;height:48px;padding:0;border:1px solid #d9d0eb;border-radius:12px;background:var(--paper);color:#554595;box-shadow:0 2px 12px rgba(39,31,67,.10);cursor:pointer}
 .sync-toggle:hover{background:var(--violet-soft);border-color:var(--violet)}
 .sync-toggle:focus-visible{outline:3px solid rgba(120,103,200,.4);outline-offset:3px}
 .sync-toggle svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .sync-toggle .icon-close{display:none}
-.sync-toggle[aria-expanded="true"]{bottom:calc(40px + env(safe-area-inset-bottom));background:var(--violet-soft);box-shadow:none}
+.sync-toggle[aria-expanded="true"]{bottom:calc(68px + env(safe-area-inset-bottom));background:var(--violet-soft);box-shadow:none}
 .sync-toggle[aria-expanded="true"] .icon-clock{display:none}
 .sync-toggle[aria-expanded="true"] .icon-close{display:block}
 body:has(.round-dialog[open]) .sync-countdown,body:has(.round-dialog[open]) .sync-toggle{visibility:hidden}
@@ -36,6 +40,7 @@ body:has(.round-dialog[open]) .sync-countdown,body:has(.round-dialog[open]) .syn
 <div class="countdown-content">
 <span id="countdownLabel" class="sync-countdown-label">다음 동기화까지</span>
 <span id="countdownValue" class="sync-countdown-time" role="timer" aria-live="off">준비 중</span>
+<button id="syncNow" class="sync-now" type="button">바로 동기화</button>
 <span id="countdownNote" class="sync-countdown-note">변경된 데이터만 반영</span>
 </div>
 </aside>
@@ -63,7 +68,17 @@ function setCountdownVisible(visible){
 }
 countdownToggle.addEventListener('click',()=>setCountdownVisible(countdownPanel.hidden));
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!countdownPanel.hidden&&!roundDialog.open){setCountdownVisible(false);countdownToggle.focus()}});
+const syncNowButton=document.getElementById('syncNow');
+syncNowButton.addEventListener('click',async()=>{
+  if(busy||!apiUrl||document.hidden)return;
+  clearTimeout(timer);
+  await sync();
+  scheduleNextSync();
+});
 function renderCountdown(){
+  syncNowButton.disabled=busy||!apiUrl;
+  syncNowButton.textContent=busy?'동기화 중…':'바로 동기화';
+  countdownPanel.setAttribute('aria-busy',String(busy));
   countdownLabel.textContent=lastSyncFailed?'다음 재시도까지':'다음 동기화까지';
   countdownNote.textContent=lastSyncFailed?'조회 실패 · 기존 화면 유지':'변경된 데이터만 반영';
   if(busy){countdownValue.textContent='조회 중';return}
@@ -138,10 +153,8 @@ async function init(){
   if(!apiUrl&&location.hostname.endsWith('.vercel.app'))apiUrl='/api/library';
   await sync();
   scheduleNextSync();
-  // A visible-tab return checks immediately and starts a fresh countdown.
-  document.addEventListener('visibilitychange',async()=>{
-    if(!document.hidden&&!busy){clearTimeout(timer);await sync();scheduleNextSync()}
-  });
+  // Returning to this tab updates the local clock only, not the data or schedule.
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderCountdown()});
   setInterval(()=>{if(!document.hidden&&!countdownPanel.hidden)renderCountdown()},1000);
 }
 q.addEventListener('input',refresh);document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>{activeStatus=tab.dataset.status;document.querySelectorAll('.tab').forEach(item=>item.setAttribute('aria-selected',String(item===tab)));refresh()}));document.getElementById('dialogClose').addEventListener('click',()=>roundDialog.close());roundDialog.addEventListener('click',event=>{if(event.target===roundDialog)roundDialog.close()});init();
