@@ -2,12 +2,6 @@ name: Sync Notion Library
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/sync-notion.yml"
-      - "scripts/sync-notion.mjs"
-  schedule:
-    - cron: "17 * * * *"
 
 permissions:
   contents: write
