@@ -18,12 +18,17 @@ function draw(list){grid.innerHTML=list.map(b=>{const index=books.indexOf(b),rou
 function refresh(){const v=q.value.trim().toLowerCase();draw(books.filter(b=>(!activeStatus||b.status===activeStatus)&&(b.title+' '+b.author).toLowerCase().includes(v)))}
 function updateStats(goal){const allRounds=books.flatMap(b=>b.rounds||[]),completed=allRounds.filter(item=>item.status==='완독').length,currentYear=new Date().getFullYear(),annualCompleted=allRounds.filter(item=>{const completionDate=item.completedDate||item.completionBasisDate||item.lastEditedTime||item.createdTime;return item.status==='완독'&&completionDate&&new Date(completionDate).getFullYear()===currentYear}).length,rate=goal>0?Math.min(100,Math.round(annualCompleted/goal*100)):0;document.getElementById('totalCount').textContent=books.length;document.getElementById('completeCount').textContent=completed;document.getElementById('goalPercent').textContent=rate+'%';document.getElementById('goalLabel').textContent=currentYear+'년 완독 목표 · '+annualCompleted+'/'+goal;document.getElementById('goalBar').style.width=rate+'%'}
 const syncStatus=document.getElementById('syncStatus');
-let apiUrl='',pollIntervalMs=30000,busy=false,loaded=false,lastSignature='',timer;
+let apiUrl='',pollIntervalMs=60000,busy=false,loaded=false,lastSignature='',timer;
+function stableCoverUrl(value){
+  try{const url=new URL(value);return url.searchParams.has('X-Amz-Signature')?url.origin+url.pathname:value}catch{return value}
+}
 function applyData(raw,config){
   if(!Array.isArray(raw)||!config||!raw.every(b=>b&&typeof b.title==='string'))throw new Error('잘못된 도서 데이터');
   const next=raw.map(b=>({...b,round:Number(b.round)||1,rounds:Array.isArray(b.rounds)&&b.rounds.length?b.rounds:[{round:Number(b.round)||1,status:b.status,completedDate:b.completedDate||null,url:b.url,createdTime:b.createdTime}]})).sort((a,b)=>(statusOrder[a.status]??99)-(statusOrder[b.status]??99)||new Date(b.createdTime||0)-new Date(a.createdTime||0));
-  const signature=JSON.stringify([next,config.goal]);
-  if(signature!==lastSignature){
+  // Ignore expiring cover-download signatures; they are not an edit to a book.
+  const signature=JSON.stringify([next.map(b=>({...b,cover:stableCoverUrl(b.cover)})),config.goal]);
+  const changed=signature!==lastSignature;
+  if(changed){
     const x=window.scrollX,y=window.scrollY,focused=document.activeElement;
     const focusedBookUrl=focused?.matches('.book')?books[Number(focused.dataset.index)]?.url:null;
     books=next;lastSignature=signature;empty.textContent='찾는 마도서가 아직 이 서가에 없어요.';
@@ -33,6 +38,7 @@ function applyData(raw,config){
     window.scrollTo(x,y);
   }
   loaded=true;
+  return changed;
 }
 async function readSnapshot(){
   const [br,cr]=await Promise.all([fetch('./data/books.json',{cache:'no-store'}),fetch('./data/config.json',{cache:'no-store'})]);
@@ -46,9 +52,11 @@ async function sync(){
     if(apiUrl){
       const response=await fetch(apiUrl,{cache:'no-store',signal:AbortSignal.timeout(25000)});
       if(!response.ok)throw new Error('최신 데이터 조회 실패');
-      const data=await response.json();applyData(data.books,data.config);
-      const timestamp=data.config.updatedAt?new Date(data.config.updatedAt).toLocaleTimeString('ko-KR'):'';
-      syncStatus.textContent=`노션 자동 갱신 · ${pollIntervalMs/1000}초 간격${timestamp?' · 조회 '+timestamp:''}`;
+      const data=await response.json(),firstLoad=!loaded,changed=applyData(data.books,data.config);
+      const timestamp=new Date().toLocaleTimeString('ko-KR');
+      const intervalLabel=pollIntervalMs%60000===0?`${pollIntervalMs/60000}분`:`${pollIntervalMs/1000}초`;
+      const resultLabel=firstLoad?'최신 데이터 불러옴':changed?'변경 반영':'변경 없음';
+      syncStatus.textContent=`노션 자동 갱신 · ${intervalLabel} 간격 · ${resultLabel} · 확인 ${timestamp}`;
     }else{await readSnapshot();syncStatus.textContent='저장된 데이터 · 실시간 서버 연결 전'}
   }catch(error){
     if(!loaded){try{await readSnapshot()}catch{empty.style.display='block';empty.textContent='도서 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.'}}
@@ -59,7 +67,11 @@ async function sync(){
 async function init(){
   try{
     const response=await fetch('./data/live.json',{cache:'no-store'});
-    if(response.ok){const config=await response.json();if(config.apiUrl){const url=new URL(config.apiUrl);if(url.protocol==='https:')apiUrl=url.href}}
+    if(response.ok){
+      const config=await response.json(),interval=Number(config.pollIntervalMs);
+      if(Number.isFinite(interval)&&interval>=10000&&interval<=3600000)pollIntervalMs=Math.round(interval);
+      if(config.apiUrl){const url=new URL(config.apiUrl);if(url.protocol==='https:')apiUrl=url.href}
+    }
   }catch{ /* GitHub Pages remains usable before live setup. */ }
   if(!apiUrl&&location.hostname.endsWith('.vercel.app'))apiUrl='/api/library';
   await sync();
