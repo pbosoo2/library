@@ -1,4 +1,4 @@
 {
   "apiUrl": "https://library-rose-alpha.vercel.app/api/library",
-  "pollIntervalMs": 60000
+  "pollIntervalMs": 3600000
 }

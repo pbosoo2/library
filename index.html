@@ -18,7 +18,7 @@ function draw(list){grid.innerHTML=list.map(b=>{const index=books.indexOf(b),rou
 function refresh(){const v=q.value.trim().toLowerCase();draw(books.filter(b=>(!activeStatus||b.status===activeStatus)&&(b.title+' '+b.author).toLowerCase().includes(v)))}
 function updateStats(goal){const allRounds=books.flatMap(b=>b.rounds||[]),completed=allRounds.filter(item=>item.status==='완독').length,currentYear=new Date().getFullYear(),annualCompleted=allRounds.filter(item=>{const completionDate=item.completedDate||item.completionBasisDate||item.lastEditedTime||item.createdTime;return item.status==='완독'&&completionDate&&new Date(completionDate).getFullYear()===currentYear}).length,rate=goal>0?Math.min(100,Math.round(annualCompleted/goal*100)):0;document.getElementById('totalCount').textContent=books.length;document.getElementById('completeCount').textContent=completed;document.getElementById('goalPercent').textContent=rate+'%';document.getElementById('goalLabel').textContent=currentYear+'년 완독 목표 · '+annualCompleted+'/'+goal;document.getElementById('goalBar').style.width=rate+'%'}
 const syncStatus=document.getElementById('syncStatus');
-let apiUrl='',pollIntervalMs=60000,busy=false,loaded=false,lastSignature='',timer;
+let apiUrl='',pollIntervalMs=3600000,busy=false,loaded=false,lastSignature='',timer;
 function stableCoverUrl(value){
   try{const url=new URL(value);return url.searchParams.has('X-Amz-Signature')?url.origin+url.pathname:value}catch{return value}
 }
@@ -54,7 +54,7 @@ async function sync(){
       if(!response.ok)throw new Error('최신 데이터 조회 실패');
       const data=await response.json(),firstLoad=!loaded,changed=applyData(data.books,data.config);
       const timestamp=new Date().toLocaleTimeString('ko-KR');
-      const intervalLabel=pollIntervalMs%60000===0?`${pollIntervalMs/60000}분`:`${pollIntervalMs/1000}초`;
+      const intervalLabel=pollIntervalMs%3600000===0?`${pollIntervalMs/3600000}시간`:pollIntervalMs%60000===0?`${pollIntervalMs/60000}분`:`${pollIntervalMs/1000}초`;
       const resultLabel=firstLoad?'최신 데이터 불러옴':changed?'변경 반영':'변경 없음';
       syncStatus.textContent=`노션 자동 갱신 · ${intervalLabel} 간격 · ${resultLabel} · 확인 ${timestamp}`;
     }else{await readSnapshot();syncStatus.textContent='저장된 데이터 · 실시간 서버 연결 전'}
