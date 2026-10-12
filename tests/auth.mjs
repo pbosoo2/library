@@ -15,7 +15,7 @@ const baseHeaders={origin:'https://library.vercel.app',host:'library.vercel.app'
 test('secure session cookie is not persistent; tampering, expiry, and rotation rejected',()=>{
  const token=createSession(),cookie=sessionCookie(token);
  assert.ok(validSession(token));assert.ok(validSession(sessionFromCookie(cookie)));
- assert.match(cookie,/HttpOnly/);assert.match(cookie,/Secure/);assert.match(cookie,/SameSite=Strict/);assert.ok(!/Expires|Max-Age/.test(cookie));
+ assert.match(cookie,/HttpOnly/);assert.match(cookie,/Secure/);assert.match(cookie,/SameSite=None/);assert.match(cookie,/Partitioned/);assert.ok(!/Expires|Max-Age/.test(cookie));
  assert.equal(validSession(token+'x'),false);assert.equal(validSession(createSession(0)),false);
  process.env.SESSION_SECRET=secret+'rotated';assert.equal(validSession(token),false);configure();
  process.env.LIBRARY_PASSWORD=password+'rotated';assert.equal(validSession(token),false);configure();
@@ -46,4 +46,15 @@ test('password login is POST-only, CSRF protected, and does not echo passwords',
 test('logout clears the browser cookie; hostile cross-origin logout rejected',()=>{
  const out=response();logout({method:'POST',headers:baseHeaders},out);assert.match(out.headers['Set-Cookie'],/Max-Age=0/);assert.equal(out.headers.Location,'/login');
  const bad=response();logout({method:'POST',headers:{...baseHeaders,origin:'https://evil.example'}},bad);assert.equal(bad.code,403);
+});
+
+test('8-character password accepted; shorter passwords remain blocked',()=>{
+ process.env.LIBRARY_PASSWORD='fixture8';assert.equal(authConfigured(),true);
+ process.env.LIBRARY_PASSWORD='short7!';assert.equal(authConfigured(),false);configure();
+});
+test('Notion embedding permitted without disabling authentication',async()=>{
+ const res=middleware(request('/login'));const csp=res.headers.get('content-security-policy');
+ assert.equal(res.headers.get('x-frame-options'),null);assert.ok(csp.includes('https://*.notion.so'));assert.ok(csp.includes('https://*.notion.com'));assert.ok(csp.includes('https://*.notion.site'));assert.ok(!csp.includes("frame-ancestors 'none'"));
+ assert.equal(middleware(request('/api/library')).status,401);
+ const signed=middleware(request('/',sessionCookie(createSession())));assert.equal(signed.headers.get('x-frame-options'),null);assert.ok(signed.headers.get('content-security-policy').includes('frame-ancestors'));
 });
