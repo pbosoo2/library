@@ -7,5 +7,8 @@
   },
   "scripts": {
     "test": "node --test tests/*.mjs"
+  },
+  "dependencies": {
+    "@vercel/functions": "3.9.11"
   }
 }

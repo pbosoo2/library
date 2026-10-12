@@ -1,24 +1,20 @@
 import { readLibrary } from "../lib/library.mjs";
+import { authConfigured, validSession, sessionFromCookie } from "../lib/auth.mjs";
 
-// Public GET-only endpoint. A CORS allowlist is not an authentication mechanism.
+// Authenticated GET-only endpoint. Also checks cookies directly as defense in depth.
 let cached, cachedAt = 0, pending;
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Vary", "Origin");
   res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Vercel-CDN-Cache-Control", "no-store");
+  if (!authConfigured()) return res.status(503).json({ error: "auth_not_configured" });
+  if (!validSession(sessionFromCookie(req.headers.cookie || ""))) return res.status(401).json({ error: "authentication_required" });
   const origin = req.headers.origin;
-  const allowed = (process.env.ALLOWED_ORIGIN || "https://pbosoo2.github.io")
-    .split(",").map(value => value.trim()).filter(Boolean);
-  if (origin) {
-    const sameOrigin = origin === `https://${req.headers.host}`;
-    if (!sameOrigin && !allowed.includes(origin)) return res.status(403).json({ error: "origin_not_allowed" });
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  }
-  if (req.method === "OPTIONS") return res.status(204).end();
+  if (origin && origin !== `https://${req.headers.host}`) return res.status(403).json({ error: "origin_not_allowed" });
   if (req.method !== "GET") {
-    res.setHeader("Allow", "GET, OPTIONS");
+    res.setHeader("Allow", "GET");
     return res.status(405).json({ error: "read_only" });
   }
   const token = process.env.NOTION_TOKEN;
@@ -30,7 +26,7 @@ export default async function handler(req, res) {
       }).finally(() => { pending = null; });
       await pending;
     }
-    res.setHeader("Cache-Control", "public, max-age=0, s-maxage=10, must-revalidate");
+    res.setHeader("Cache-Control", "private, no-store");
     return res.status(200).json(cached);
   } catch (error) {
     console.error("Library read failed:", error.message);
