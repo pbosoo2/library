@@ -1,4 +1,4 @@
-# Kagen 마법 도서관 — GitHub Pages + Notion 자동 동기화
+# 마법 도서관 — GitHub Pages + Notion 자동 동기화
 
 이 저장소는 Notion의 `북로그 DB`를 **읽기 전용**으로 조회해 GitHub Pages용 JSON과 책 표지를 갱신합니다. 데이터베이스를 수정하는 API 호출은 없습니다.
 
