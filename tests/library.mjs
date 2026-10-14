@@ -8,7 +8,7 @@ process.env.SESSION_SECRET='fixture-secret-which-is-not-used-in-production';
 const authHeaders=()=>({host:'library.vercel.app',cookie:sessionCookie(createSession())});
 const book=(id,round,state,date=null)=>({id,url:`https://www.notion.so/${id}`,created_time:`2026-01-0${round}T00:00:00Z`,last_edited_time:'2026-01-05T00:00:00Z',properties:{'도서명':{title:[{plain_text:'인비인'}]},'저자':{multi_select:[{name:'성해나'}]},'상태':{status:{name:state}},'회차':{number:round},'완독일':{date:date?{start:date}:null},'책 표지':{files:[{external:{url:'https://example.com/book.jpg'}}]},'비공개 메모':{rich_text:[{plain_text:'NEVER EXPOSE'}]}}});
 const pages=[book('round-two',2,'읽는 중'),book('round-one',1,'완독','2026-01-03')];
-const report=[{properties:{'올해 목표 권수':{number:10}}}];
+const report=[{id:'goal',properties:{'올해 목표 권수':{number:10}}}];
 test('groups rounds and preserves completion basis without exposing raw properties',()=>{
  const data=projectLibrary(pages,report);
  assert.equal(data.books.length,1);assert.equal(data.books[0].round,2);
@@ -29,12 +29,26 @@ test('endpoint rejects writes, unknown origins, and missing server credentials',
   const res=response();await handler(req,res);assert.equal(res.code,code);assert.equal(res.body.error,error);assert.equal(res.headers['Cache-Control'],'no-store');
  }
 });
-test('GET uses server-held credential, caches reads, and returns only projected fields',async()=>{
+test('GET syncs through server-held Redis credentials; simultaneous requests coalesce',async()=>{
  const original=globalThis.fetch;
- process.env.NOTION_TOKEN='test-placeholder-not-a-real-token';let calls=0;
- globalThis.fetch=async url=>{calls++;return Response.json({results:url.includes('668551f3')?pages:report,has_more:false})};
+ process.env.NOTION_TOKEN='test-placeholder-not-a-real-token';
+ process.env.KV_REST_API_URL='https://redis.example';process.env.KV_REST_API_TOKEN='fixture-redis-token';
+ const store=new Map();let notionCalls=0,commands=0;
+ globalThis.fetch=async(url,options)=>{
+  if(url==='https://redis.example'){
+   commands++;const [cmd,...a]=JSON.parse(options.body);let result;
+   if(cmd==='SET'){if(a.includes('NX')&&store.has(a[0]))result=null;else{store.set(a[0],a[1]);result='OK'}}
+   else if(cmd==='GET')result=store.get(a[0])??null;
+   else if(cmd==='EVAL'){const [,keyCount,...rest]=a;if(store.get(rest[0])===rest[keyCount]){if(keyCount===2)store.set(rest[1],rest[3]);store.delete(rest[0]);result=1}else result=0}
+   return Response.json({result});
+  }
+  notionCalls++;return Response.json({results:url.includes('668551f3')?pages:report,has_more:false});
+ };
  try{
-  for(let i=0;i<2;i++){const res=response();await handler({method:'GET',headers:{...authHeaders(),origin:'https://library.vercel.app'}},res);assert.equal(res.code,200);assert.equal(res.body.books.length,1);assert.ok(!JSON.stringify(res.body).includes(process.env.NOTION_TOKEN));}
-  assert.equal(calls,2);
- }finally{globalThis.fetch=original;delete process.env.NOTION_TOKEN}
+  const results=await Promise.all([0,1].map(async()=>{const res=response();await handler({method:'GET',headers:{...authHeaders(),origin:'https://library.vercel.app'}},res);return res}));
+  for(const res of results){assert.equal(res.code,200);assert.equal(res.body.books.length,1);assert.ok(!JSON.stringify(res.body).includes(process.env.NOTION_TOKEN));assert.ok(!JSON.stringify(res.body).includes(process.env.KV_REST_API_TOKEN));}
+  assert.equal(notionCalls,2);assert.equal(commands,3);
+  const res=response();await handler({method:'GET',headers:authHeaders()},res);assert.equal(res.code,200);assert.equal(notionCalls,4);
+  delete process.env.KV_REST_API_TOKEN;const missing=response();await handler({method:'GET',headers:authHeaders()},missing);assert.equal(missing.code,503);assert.equal(missing.body.error,'redis_not_configured');
+ }finally{globalThis.fetch=original;delete process.env.NOTION_TOKEN;delete process.env.KV_REST_API_URL;delete process.env.KV_REST_API_TOKEN}
 });

@@ -1,8 +1,9 @@
-import { readLibrary } from "../lib/library.mjs";
+import { syncLibrary } from "../lib/sync-library.mjs";
+import { redisCredentials, createRedis } from "../lib/redis.mjs";
 import { authConfigured, validSession, sessionFromCookie } from "../lib/auth.mjs";
 
 // Authenticated GET-only endpoint. Also checks cookies directly as defense in depth.
-let cached, cachedAt = 0, pending;
+let pending;
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -19,17 +20,16 @@ export default async function handler(req, res) {
   }
   const token = process.env.NOTION_TOKEN;
   if (!token) return res.status(503).json({ error: "server_not_configured" });
+  const credentials = redisCredentials();
+  if (!credentials) return res.status(503).json({ error: "redis_not_configured" });
   try {
-    if (!cached || Date.now() - cachedAt >= 10000) {
-      if (!pending) pending = readLibrary(token).then(data => {
-        cached = data; cachedAt = Date.now(); return data;
-      }).finally(() => { pending = null; });
-      await pending;
-    }
+    // Coalesce only simultaneous requests; every later button/hourly read checks deltas.
+    if (!pending) pending = syncLibrary(token, createRedis(credentials)).finally(() => { pending = null; });
+    const data = await pending;
     res.setHeader("Cache-Control", "private, no-store");
-    return res.status(200).json(cached);
+    return res.status(200).json(data);
   } catch (error) {
-    console.error("Library read failed:", error.message);
-    return res.status(502).json({ error: "notion_read_failed" });
+    console.error("Library sync failed");
+    return res.status(502).json({ error: "library_sync_failed" });
   }
 }
