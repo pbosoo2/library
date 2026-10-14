@@ -20,7 +20,6 @@ body.countdown-open .shell{height:calc(100dvh - 280px - env(safe-area-inset-bott
 .logout-form{margin:4px 0 0}.logout-button{min-height:44px;padding:8px 16px;border:0;background:transparent;color:#655a7c;text-decoration:underline;font:14px Arial,"Noto Sans KR",sans-serif;cursor:pointer}.logout-button:focus-visible{outline:3px solid #b7a6ef;outline-offset:2px}
 .sync-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px auto 8px}
 .sync-now{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:76px;padding:10px 12px;border:1px solid #554595;border-radius:8px;background:#554595;color:#fff;font:700 15px/1.5 Arial,"Noto Sans KR",sans-serif;cursor:pointer;overflow-wrap:anywhere}
-.sync-now .button-note{font-size:14px;font-weight:400;word-break:keep-all}
 .sync-full{background:var(--violet-soft);color:#554595}
 .sync-full:hover:not(:disabled){background:#e0d8f8!important}
 .sync-full:disabled{color:#fff}
@@ -85,7 +84,7 @@ body:has(.round-dialog[open]) .sync-countdown,body:has(.round-dialog[open]) .syn
 <div class="countdown-content">
 <span id="countdownLabel" class="sync-countdown-label">다음 동기화까지</span>
 <span id="countdownValue" class="sync-countdown-time" role="timer" aria-live="off">준비 중</span>
-<div class="sync-actions"><button id="syncNow" class="sync-now" type="button"><span>동기화</span><span class="button-note">(1시간마다 변경된 항목만 조회)</span></button><button id="syncFull" class="sync-now sync-full" type="button"><span>전체 동기화</span><span class="button-note">(24시간마다 전체 목록 대조)</span></button></div>
+<div class="sync-actions"><button id="syncNow" class="sync-now" type="button"><span>동기화</span></button><button id="syncFull" class="sync-now sync-full" type="button"><span>전체 동기화</span></button></div>
 <span id="countdownNote" class="sync-countdown-note" hidden></span>
 <form class="logout-form" method="post" action="/api/logout"><button class="logout-button" type="submit">로그아웃</button></form>
 </div>
@@ -144,7 +143,7 @@ function setCountdownVisible(visible){
 countdownToggle.addEventListener('click',()=>setCountdownVisible(countdownPanel.hidden));
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!countdownPanel.hidden&&!roundDialog.open){setCountdownVisible(false);countdownToggle.focus()}});
 const syncNowButton=document.getElementById('syncNow'),syncFullButton=document.getElementById('syncFull');
-const buttonNames={delta:'<span>동기화</span><span class="button-note">(1시간마다 변경된 항목만 조회)</span>',full:'<span>전체 동기화</span><span class="button-note">(24시간마다 전체 목록 대조)</span>'};
+const buttonNames={delta:'<span>동기화</span>',full:'<span>전체 동기화</span>'};
 async function manualSync(forceFull=false){
   if(busy||!apiUrl||document.hidden)return;
   clearTimeout(timer);
