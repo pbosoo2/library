@@ -3,7 +3,7 @@ import { redisCredentials, createRedis } from "../lib/redis.mjs";
 import { authConfigured, validSession, sessionFromCookie } from "../lib/auth.mjs";
 
 // Authenticated GET-only endpoint. Also checks cookies directly as defense in depth.
-let pending;
+let pending, pendingFull;
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -22,10 +22,18 @@ export default async function handler(req, res) {
   if (!token) return res.status(503).json({ error: "server_not_configured" });
   const credentials = redisCredentials();
   if (!credentials) return res.status(503).json({ error: "redis_not_configured" });
+  const query = new URL(req.url || "/api/library", "https://library.invalid").searchParams;
+  const forceFull = query.get("full") === "1";
   try {
     // Coalesce only simultaneous requests; every later button/hourly read checks deltas.
-    if (!pending) pending = syncLibrary(token, createRedis(credentials)).finally(() => { pending = null; });
-    const data = await pending;
+    const read = () => syncLibrary(token, createRedis(credentials), { forceFull });
+    if (forceFull) {
+      if (!pendingFull) pendingFull = (pending ? pending.catch(() => {}) : Promise.resolve())
+        .then(read).finally(() => { pendingFull = null; });
+    } else if (!pending && !pendingFull) {
+      pending = read().finally(() => { pending = null; });
+    }
+    const data = await (forceFull ? pendingFull : pendingFull || pending);
     res.setHeader("Cache-Control", "private, no-store");
     return res.status(200).json(data);
   } catch (error) {

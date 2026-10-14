@@ -33,7 +33,7 @@ test('GET syncs through server-held Redis credentials; simultaneous requests coa
  const original=globalThis.fetch;
  process.env.NOTION_TOKEN='test-placeholder-not-a-real-token';
  process.env.KV_REST_API_URL='https://redis.example';process.env.KV_REST_API_TOKEN='fixture-redis-token';
- const store=new Map();let notionCalls=0,commands=0;
+ const store=new Map();let notionCalls=0,commands=0;const notionBodies=[];
  globalThis.fetch=async(url,options)=>{
   if(url==='https://redis.example'){
    commands++;const [cmd,...a]=JSON.parse(options.body);let result;
@@ -42,13 +42,14 @@ test('GET syncs through server-held Redis credentials; simultaneous requests coa
    else if(cmd==='EVAL'){const [,keyCount,...rest]=a;if(store.get(rest[0])===rest[keyCount]){if(keyCount===2)store.set(rest[1],rest[3]);store.delete(rest[0]);result=1}else result=0}
    return Response.json({result});
   }
-  notionCalls++;return Response.json({results:url.includes('668551f3')?pages:report,has_more:false});
+  notionCalls++;notionBodies.push(JSON.parse(options.body));return Response.json({results:url.includes('668551f3')?pages:report,has_more:false});
  };
  try{
   const results=await Promise.all([0,1].map(async()=>{const res=response();await handler({method:'GET',headers:{...authHeaders(),origin:'https://library.vercel.app'}},res);return res}));
   for(const res of results){assert.equal(res.code,200);assert.equal(res.body.books.length,1);assert.ok(!JSON.stringify(res.body).includes(process.env.NOTION_TOKEN));assert.ok(!JSON.stringify(res.body).includes(process.env.KV_REST_API_TOKEN));}
   assert.equal(notionCalls,2);assert.equal(commands,3);
-  const res=response();await handler({method:'GET',headers:authHeaders()},res);assert.equal(res.code,200);assert.equal(notionCalls,4);
+  const res=response();await handler({method:'GET',headers:authHeaders()},res);assert.equal(res.code,200);assert.equal(notionCalls,4);assert.ok(notionBodies.slice(2).every(body=>body.filter));
+  const full=response();await handler({method:'GET',url:'/api/library?full=1',headers:authHeaders()},full);assert.equal(full.code,200);assert.equal(notionCalls,6);assert.ok(notionBodies.slice(4).every(body=>!body.filter));assert.ok(full.body.config.fullUpdatedAt);
   delete process.env.KV_REST_API_TOKEN;const missing=response();await handler({method:'GET',headers:authHeaders()},missing);assert.equal(missing.code,503);assert.equal(missing.body.error,'redis_not_configured');
  }finally{globalThis.fetch=original;delete process.env.NOTION_TOKEN;delete process.env.KV_REST_API_URL;delete process.env.KV_REST_API_TOKEN}
 });

@@ -106,3 +106,31 @@ test('concurrent instance waits for committed data without rereading Notion',asy
   }});
   assert.equal(data.books.length,1);assert.equal(waits,1);assert.equal(notionReads,0);
 });
+test('forced full before 24 hours removes stale rows and records last reconciliation time',async()=>{
+  const db=memoryRedis();
+  const first=await syncLibrary(TOKEN,db.redis,{fetchImpl:notion([row('a'),row('b','도서 B')],[report(10)]).fetchImpl,now:()=>START});
+  assert.equal(first.config.fullUpdatedAt,new Date(START).toISOString());
+  const delta=await syncLibrary(TOKEN,db.redis,{fetchImpl:notion([],[]).fetchImpl,now:()=>START+10000});
+  assert.equal(delta.books.length,2);assert.equal(delta.config.fullUpdatedAt,first.config.fullUpdatedAt);
+  const full=notion([row('a')],[report(15)]);
+  const data=await syncLibrary(TOKEN,db.redis,{forceFull:true,fetchImpl:full.fetchImpl,now:()=>START+20000});
+  assert.equal(data.books.length,1);assert.equal(data.config.goal,15);assert.ok(full.calls.every(c=>!c.body.filter));
+  assert.equal(data.config.fullUpdatedAt,new Date(START+20000).toISOString());
+});
+test('forced full waiting behind a delta still performs a full query',async()=>{
+  const db=memoryRedis(),keys=syncKeys(TOKEN);
+  await syncLibrary(TOKEN,db.redis,{fetchImpl:notion([row('a'),row('b','도서 B')],[report(10)]).fetchImpl,now:()=>START});
+  db.values.set(keys.lock,'delta-worker');let waits=0;
+  const full=notion([row('a')],[report(10)]);
+  const data=await syncLibrary(TOKEN,db.redis,{forceFull:true,now:()=>START+10000,fetchImpl:full.fetchImpl,sleep:async()=>{
+    waits++;const snapshot=JSON.parse(db.values.get(keys.snapshot));snapshot.syncedAt=new Date(START+10001).toISOString();db.values.set(keys.snapshot,JSON.stringify(snapshot));db.values.delete(keys.lock);
+  }});
+  assert.equal(waits,1);assert.equal(data.books.length,1);assert.ok(full.calls.every(c=>!c.body.filter));
+});
+test('failed forced full leaves successful reconciliation timestamps unchanged',async()=>{
+  const db=memoryRedis(),keys=syncKeys(TOKEN);
+  await syncLibrary(TOKEN,db.redis,{fetchImpl:notion([row('a')],[report(10)]).fetchImpl,now:()=>START});
+  const before=db.values.get(keys.snapshot);
+  await assert.rejects(syncLibrary(TOKEN,db.redis,{forceFull:true,now:()=>START+10000,fetchImpl:async()=>Response.json({}, {status:500})}));
+  assert.equal(db.values.get(keys.snapshot),before);
+});
