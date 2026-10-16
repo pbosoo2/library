@@ -12,10 +12,13 @@ configure();
 const request=(path,cookie='')=>new Request('https://library.vercel.app'+path,{headers:{cookie}});
 function response(){return {headers:{},code:200,setHeader(k,v){this.headers[k]=v},status(n){this.code=n;return this},json(body){this.body=body;return this},end(){return this}}}
 const baseHeaders={origin:'https://library.vercel.app',host:'library.vercel.app','x-real-ip':'fixture-client'};
-test('secure session cookie is not persistent; tampering, expiry, and rotation rejected',()=>{
+test('secure session cookie persists for seven days; tampering, expiry, and rotation rejected',()=>{
  const token=createSession(),cookie=sessionCookie(token);
  assert.ok(validSession(token));assert.ok(validSession(sessionFromCookie(cookie)));
- assert.match(cookie,/HttpOnly/);assert.match(cookie,/Secure/);assert.match(cookie,/SameSite=None/);assert.match(cookie,/Partitioned/);assert.ok(!/Expires|Max-Age/.test(cookie));
+ assert.match(cookie,/HttpOnly/);assert.match(cookie,/Secure/);assert.match(cookie,/SameSite=None/);assert.match(cookie,/Partitioned/);assert.match(cookie, /; Max-Age=604800$/);
+ const issuedAt=Date.now(),fixedToken=createSession(issuedAt);
+ assert.equal(validSession(fixedToken,issuedAt+6*24*60*60*1000),true);
+ assert.equal(validSession(fixedToken,issuedAt+7*24*60*60*1000),false);
  assert.equal(validSession(token+'x'),false);assert.equal(validSession(createSession(0)),false);
  process.env.SESSION_SECRET=secret+'rotated';assert.equal(validSession(token),false);configure();
  process.env.LIBRARY_PASSWORD=password+'rotated';assert.equal(validSession(token),false);configure();
@@ -41,7 +44,7 @@ test('password login is POST-only, CSRF protected, and does not echo passwords',
   const res=response();await login({method,headers:{...baseHeaders,origin},body:{password}},res);assert.equal(res.code,expected);
  }
  const wrong=response();await login({method:'POST',headers:baseHeaders,body:{password:'wrong-fixture'}},wrong);assert.equal(wrong.headers.Location,'/login?error=invalid');assert.equal(wrong.headers['Set-Cookie'],undefined);
- const right=response();await login({method:'POST',headers:baseHeaders,body:{password}},right);assert.equal(right.code,303);assert.equal(right.headers.Location,'/');assert.ok(validSession(sessionFromCookie(right.headers['Set-Cookie'])));assert.ok(!JSON.stringify(right).includes(password));
+ const right=response();await login({method:'POST',headers:baseHeaders,body:{password}},right);assert.equal(right.code,303);assert.equal(right.headers.Location,'/');assert.ok(validSession(sessionFromCookie(right.headers['Set-Cookie'])));assert.match(right.headers['Set-Cookie'],/; Max-Age=604800$/);assert.ok(!JSON.stringify(right).includes(password));
 });
 test('logout clears the browser cookie; hostile cross-origin logout rejected',()=>{
  const out=response();logout({method:'POST',headers:baseHeaders},out);assert.match(out.headers['Set-Cookie'],/Max-Age=0/);assert.equal(out.headers.Location,'/login');
